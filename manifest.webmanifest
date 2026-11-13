@@ -1,0 +1,19 @@
+{
+  "name": "BID RADAR · 비드레이더 (CON Bid Intelligence) ⓐ",
+  "short_name": "비드레이더",
+  "description": "공고가 아니라 수주를 위한 레이더 — 전국·대구경북 이벤트기획사 입찰·낙찰 360° 인텔리전스",
+  "start_url": "./index.html#/overview",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "lang": "ko-KR",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

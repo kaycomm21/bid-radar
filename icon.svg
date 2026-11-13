@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="BID RADAR 아이콘">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#17242e"/>
+      <stop offset="100%" stop-color="#0f1419"/>
+    </radialGradient>
+    <linearGradient id="sweepGrad" x1="50%" y1="50%" x2="92%" y2="20%">
+      <stop offset="0%" stop-color="#36c9a5" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#36c9a5" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bgGrad)"/>
+  <circle cx="64" cy="64" r="46" fill="none" stroke="#2b3846" stroke-width="2"/>
+  <circle cx="64" cy="64" r="32" fill="none" stroke="#36c9a5" stroke-opacity="0.35" stroke-width="1.8" stroke-dasharray="4 4"/>
+  <circle cx="64" cy="64" r="18" fill="none" stroke="#36c9a5" stroke-opacity="0.65" stroke-width="2"/>
+  <line x1="64" y1="14" x2="64" y2="114" stroke="#2b3846" stroke-width="1.5"/>
+  <line x1="14" y1="64" x2="114" y2="64" stroke="#2b3846" stroke-width="1.5"/>
+  <path d="M64 64 L103 38 A46 46 0 0 0 64 18 Z" fill="url(#sweepGrad)"/>
+  <line x1="64" y1="64" x2="103" y2="38" stroke="#36c9a5" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="85" cy="44" r="5.5" fill="#f92672"/>
+  <circle cx="85" cy="44" r="9" fill="none" stroke="#f92672" stroke-opacity="0.45" stroke-width="1.8"/>
+  <circle cx="43" cy="81" r="4" fill="#f6c453"/>
+  <circle cx="64" cy="64" r="4.5" fill="#36c9a5"/>
+</svg>

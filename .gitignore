@@ -1,0 +1,9 @@
+# Local raw G2B cache (regenerable) & secrets
+g2b_2026_cache.json
+.env
+*.env
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db
