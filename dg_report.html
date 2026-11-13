@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f1419" />
+<title>🎯 BID RADAR · 대구·경북 기획사 수주 심층 리포트 ⓐ</title>
+<link rel="icon" type="image/svg+xml" href="./icon.svg" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="./dg_report.js"></script>
+<style>
+:root{--bg:#0f1419;--elev:#171f27;--card:#1c2630;--ink:#eef2f6;--muted:#93a1b1;--line:#2b3846;--acc:#36c9a5;--blue:#5aa9ff;--yellow:#f6c453;--pink:#f92672;--orange:#fb923c}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:14px;line-height:1.55;overflow-x:hidden}
+a{color:var(--blue);text-decoration:none}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:12.5px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.btn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;font-weight:600;font-size:12.5px}
+.notice{background:rgba(246,196,83,.1);border:1px solid rgba(246,196,83,.4);color:var(--yellow);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:14px}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}.toc a{background:var(--elev);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{color:var(--muted);font-size:12px}.kpi .v{font-size:22px;font-weight:800;margin:4px 0}.kpi .s{font-size:11.5px;color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.desc{color:var(--muted);font-size:12px;margin:0 0 10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;background:var(--elev);position:sticky;top:0}
+td.n,th.n{text-align:right;white-space:nowrap}
+.b{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+.b-dg{color:var(--acc);border-color:rgba(54,201,165,.45);background:rgba(54,201,165,.12)}
+.b-out{color:var(--blue);border-color:rgba(90,169,255,.45);background:rgba(90,169,255,.12)}
+.b-y{color:var(--yellow);border-color:rgba(246,196,83,.45)}
+.b-p{color:var(--pink);border-color:rgba(249,38,114,.45)}
+.bar{height:8px;border-radius:4px;background:var(--elev);overflow:hidden;display:flex;min-width:90px}
+.bar span{display:block;height:100%}
+.cell{font-size:11.5px;line-height:1.4}.cell .c{font-weight:700}.cell .a{color:var(--muted)}
+.cell.loc .c{color:var(--acc)}
+.ins li{margin-bottom:6px}
+canvas{max-height:300px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>🎯 대구·경북 이벤트기획사 수주 심층 리포트</h1>
+      <div class="sub">BID RADAR · CON Bid Intelligence ⓐ — <span id="gen"></span></div>
+    </div>
+    <div><a class="btn" href="./index.html#/overview">← BID RADAR 대시보드</a></div>
+  </div>
+  <div class="notice" id="notice"></div>
+  <div class="toc">
+    <a href="#s1">① 2026 수주 총괄</a><a href="#s2">② 월별 추이</a><a href="#s3">③ 기획사 순위</a><a href="#s4">④ 홈그라운드 방어·외지업체</a>
+    <a href="#s5">⑤ 금액대·유형</a><a href="#s6">⑥ 2026 대형 수주</a><a href="#s7">⑦ 주요 입찰 5개년 수주사</a><a href="#s8">⑧ 5개년 지역 강자</a><a href="#s9">⑨ 전략 시사점</a>
+  </div>
+
+  <section id="s1"><div class="kpis" id="kpis"></div></section>
+
+  <section class="g2">
+    <div class="panel" id="s2"><h2>② 2026 월별 수주 추이</h2><p class="desc">대구·경북 본사 기획사 수주 건수(발주지역 구분) · 꺾은선=수주액(억원)</p><canvas id="cMon"></canvas></div>
+    <div class="panel"><h2>대구 본사 vs 경북 본사</h2><p class="desc">본사 소재 시·도 기준 수주 건수·금액·업체 수</p><div class="tw"><table id="tSido"></table></div>
+      <h2 style="margin-top:14px">발주지역별 수주</h2><div class="tw"><table id="tZone"></table></div></div>
+  </section>
+
+  <section class="panel" id="s3"><h2>③ 2026 대구·경북 기획사 수주 순위 TOP 30</h2>
+    <p class="desc">수주액 기준 · <span class="b b-dg">대구·경북 발주</span> / <span class="b b-out">타지역 발주</span> 건수·금액 구분 · 평균 낙찰률은 공식 예가 공개 건만</p>
+    <div class="tw"><table id="tCorp"></table></div></section>
+
+  <section class="g2" id="s4">
+    <div class="panel"><h2>④-1 홈그라운드 방어율</h2><p class="desc">대구·경북 기관이 발주한 이벤트 공고(2026) 중 지역 기획사가 따낸 비중</p><canvas id="cHome"></canvas><div id="homeTxt" class="sub" style="margin-top:8px"></div></div>
+    <div class="panel"><h2>④-2 대구·경북 발주를 가져간 외지 업체 TOP 15</h2><p class="desc">지역 기획사의 직접 경쟁자 (본사 대구·경북 외)</p><div class="tw"><table id="tOut"></table></div></div>
+  </section>
+
+  <section class="g2" id="s5">
+    <div class="panel"><h2>⑤-1 금액대 분포</h2><div class="tw"><table id="tBand"></table></div></div>
+    <div class="panel"><h2>⑤-2 행사 유형별</h2><div class="tw"><table id="tCat"></table></div></div>
+  </section>
+
+  <section class="panel" id="s6"><h2>⑥ 2026 대구·경북 기획사 대형 수주 TOP 15</h2><div class="tw"><table id="tBig"></table></div></section>
+
+  <section class="panel" id="s7"><h2>⑦ 대구·경북 주요 입찰 · 연도별(2022~2026) 수주사 매트릭스</h2>
+    <p class="desc">선정 기준: 상징성(대표 축제·도민행사·국제행사) + 고유성(매년 반복 발주) + 사업비 규모 → 종합점수 순. <span class="b b-y">★ 대표행사</span> = 상징성 키워드, <span class="b">🔁 반복</span> = 3개 연도 이상 반복 + 평균 3억↑ 자동탐지. 초록 글씨 = 대구·경북 본사 업체. 칸이 비어 있으면 해당 연도 나라장터 낙찰 기록이 없거나(자체·수의·민간위탁) 미수집 구간입니다.</p>
+    <div class="tw"><table id="tMajor" style="min-width:1050px"></table></div></section>
+
+  <section class="g2" id="s8">
+    <div class="panel"><h2>⑧-1 대구·경북 발주 이벤트 시장 규모 (연도별)</h2><p class="desc">대구·경북 기관 발주 이벤트성 낙찰 · 막대=총액(억) · 선=지역업체 수주 비중(%)</p><canvas id="cYear"></canvas></div>
+    <div class="panel"><h2>⑧-2 5개년 누적 수주 TOP 20 (대구·경북 발주)</h2><div class="tw"><table id="tCum"></table></div></div>
+  </section>
+
+  <section class="panel" id="s9"><h2>⑨ 데이터로 본 전략 시사점</h2><ul class="ins" id="ins"></ul></section>
+  <div class="sub">ⓐ AntiGravity 제작 · 원천: 노션 입찰 DB(Read-Only) + 나라장터 낙찰정보 OpenAPI · 금액=1순위 낙찰금액(협상계약 비공개 시 사업금액 대체)</div>
+</div>
+<script>
+(()=>{
+const R=window.__DG_REPORT__; if(!R){document.body.innerHTML='<p style="padding:20px">dg_report.js 없음</p>';return;}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const eok=v=>{v=v||0;return v>=1e8?(v/1e8).toFixed(1)+'억':Math.round(v/1e4).toLocaleString('ko-KR')+'만'};
+const pct=(a,b)=>b?(a/b*100).toFixed(1)+'%':'-';
+const A=R.A; const Z=A.zone; const zdg=Z['대구·경북 발주']||{count:0,total:0}; const zout=Z['타지역 발주']||{count:0,total:0};
+$('gen').textContent='생성 '+R.generated_at.replace('T',' ');
+$('notice').innerHTML='⚠️ <b>데이터 범위</b>: 2026년 분석(①~⑥)은 BID RADAR 정제 데이터(노션+나라장터) 기준. 5개년(⑦·⑧)은 나라장터 낙찰정보 '+esc(R.coverage.history_from)+'~'+esc(R.coverage.history_to)+' + 2026년. '+esc(R.coverage.gap_note)+'.';
+const H=A.home_defense;
+const kp=[
+ ['2026 수주 건수',A.count.toLocaleString()+'건',`대구·경북 본사 기획사 ${A.corp_count}개사`],
+ ['2026 수주 총액',eok(A.total),`${Math.round(A.total).toLocaleString('ko-KR')}원`],
+ ['대구·경북 발주 수주',zdg.count+'건',`${eok(zdg.total)} · 건수 비중 ${pct(zdg.count,A.count)}`],
+ ['타지역 발주 수주 (외부 진출)',zout.count+'건',`${eok(zout.total)} · 건수 비중 ${pct(zout.count,A.count)}`],
+ ['홈그라운드 방어율',pct(H.home_n,H.dg_orders),`지역 발주 ${H.dg_orders}건 중 ${H.home_n}건 · 금액 기준 ${pct(H.home_v,H.dg_orders_total)}`],
+ ['TOP5 집중도',pct(A.corps.slice(0,5).reduce((s,c)=>s+c.v,0),A.total),'상위 5개사 수주액 점유'],
+];
+$('kpis').innerHTML=kp.map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
+$('tSido').innerHTML='<tr><th>본사</th><th class="n">업체 수</th><th class="n">건수</th><th class="n">수주액</th><th class="n">업체당 평균</th></tr>'+
+ Object.entries(A.sido).map(([k,v])=>`<tr><td><b>${k}</b></td><td class="n">${v.corps}개사</td><td class="n">${v.count}건</td><td class="n">${eok(v.total)}</td><td class="n">${eok(v.total/v.corps)}</td></tr>`).join('');
+$('tZone').innerHTML='<tr><th>발주지역</th><th class="n">건수</th><th class="n">수주액</th><th class="n">건당 평균</th></tr>'+
+ [['대구·경북 발주',zdg,'b-dg'],['타지역 발주',zout,'b-out']].map(([k,v,c])=>`<tr><td><span class="b ${c}">${k}</span></td><td class="n">${v.count}건</td><td class="n">${eok(v.total)}</td><td class="n">${eok(v.total/Math.max(1,v.count))}</td></tr>`).join('')+
+ `<tr><td><b>합계</b></td><td class="n"><b>${A.count}건</b></td><td class="n"><b>${eok(A.total)}</b></td><td class="n">${eok(A.total/A.count)}</td></tr>`;
+const maxV=A.corps[0]?.v||1;
+$('tCorp').innerHTML='<tr><th>#</th><th>기획사</th><th>본사</th><th class="n">총 건수</th><th class="n">총 수주액</th><th>지역/타지역</th><th class="n">대구·경북 발주</th><th class="n">타지역 발주</th><th class="n">평균낙찰률</th><th>주력 유형</th><th>대표 발주처</th></tr>'+
+ A.corps.slice(0,30).map((c,i)=>`<tr><td>${i+1}</td><td><b>${esc(c.name)}</b>${c.ceo?`<div class="sub">대표 ${esc(c.ceo)}</div>`:''}</td><td>${esc(c.hq||c.sido)}</td><td class="n">${c.n}건</td><td class="n"><b>${eok(c.v)}</b></td>
+ <td><div class="bar" title="지역 ${c.dg_n} / 타지역 ${c.out_n}"><span style="width:${c.dg_n/c.n*100}%;background:var(--acc)"></span><span style="width:${c.out_n/c.n*100}%;background:var(--blue)"></span></div></td>
+ <td class="n">${c.dg_n}건 · ${eok(c.dg_v)}</td><td class="n">${c.out_n}건 · ${eok(c.out_v)}</td><td class="n">${c.avg_rate?c.avg_rate.toFixed(1)+'%':'-'}</td><td>${esc(c.top_cat)}</td><td>${esc(c.top_org)}</td></tr>`).join('');
+$('homeTxt').innerHTML=`대구·경북 발주 <b>${H.dg_orders}건 (${eok(H.dg_orders_total)})</b> 중 지역업체 <b>${H.home_n}건 (${eok(H.home_v)})</b>, 외지업체 <b>${H.away_n}건 (${eok(H.away_v)})</b>`;
+$('tOut').innerHTML='<tr><th>#</th><th>업체</th><th>본사</th><th class="n">건수</th><th class="n">수주액</th></tr>'+A.outsiders.map((o,i)=>`<tr><td>${i+1}</td><td>${esc(o.name)}</td><td>${esc(o.sido)}</td><td class="n">${o.n}</td><td class="n">${eok(o.v)}</td></tr>`).join('');
+$('tBand').innerHTML='<tr><th>금액대</th><th class="n">건수</th><th class="n">총액</th><th class="n">금액 비중</th></tr>'+A.bands.map(b=>`<tr><td>${b.band}</td><td class="n">${b.count}</td><td class="n">${eok(b.total)}</td><td class="n">${pct(b.total,A.total)}</td></tr>`).join('');
+$('tCat').innerHTML='<tr><th>유형</th><th class="n">건수</th><th class="n">총액</th><th class="n">건당</th></tr>'+A.cats.map(c=>`<tr><td>${esc(c.cat)}</td><td class="n">${c.count}</td><td class="n">${eok(c.total)}</td><td class="n">${eok(c.total/c.count)}</td></tr>`).join('');
+$('tBig').innerHTML='<tr><th>#</th><th>게시일</th><th>공고명</th><th>발주처</th><th>수주 기획사</th><th>구분</th><th class="n">금액</th></tr>'+A.big_wins.map((b,i)=>`<tr><td>${i+1}</td><td>${esc(b.posted)}</td><td>${b.link?`<a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b.title)} ↗</a>`:esc(b.title)}</td><td>${esc(b.org)}</td><td><b>${esc(b.corp)}</b></td><td><span class="b ${b.zone.startsWith('대구')?'b-dg':'b-out'}">${b.zone}</span></td><td class="n">${eok(b.v)}</td></tr>`).join('');
+const yrs=['2022','2023','2024','2025','2026'];
+$('tMajor').innerHTML='<tr><th>#</th><th>주요 입찰</th><th>주 발주처</th><th class="n">최대 사업비</th>'+yrs.map(y=>`<th>${y}${y==='2025'?' <span class="b b-y">부분</span>':''}</th>`).join('')+'<th>최다 수주</th></tr>'+
+ R.major.map((m,i)=>`<tr><td>${i+1}</td><td><b>${esc(m.name.replace('🔁 ',''))}</b><div>${m.symbolic?'<span class="b b-y">★ 대표행사</span>':'<span class="b">🔁 반복</span>'} <span class="sub">${m.bids}건 · 수주사 ${m.unique_winners}곳</span></div></td><td>${esc(m.org)}</td><td class="n">${eok(m.max_amt)}</td>`+
+ yrs.map(y=>`<td>${(m.cells[y]||[]).map(c=>`<div class="cell ${['대구','경북'].includes(c.sido)?'loc':''}" title="${esc(c.title)}"><span class="c">${esc(c.corp)}</span> <span class="a">${eok(c.amt)}</span></div>`).join('')||'<span class="sub">–</span>'}</td>`).join('')+
+ `<td>${esc(m.top_winner[0])} (${m.top_winner[1]})</td></tr>`).join('');
+$('tCum').innerHTML='<tr><th>#</th><th>업체</th><th>본사</th><th class="n">건수</th><th class="n">누적액</th>'+yrs.map(y=>`<th class="n">${y.slice(2)}</th>`).join('')+'</tr>'+
+ R.cum_top.map((c,i)=>`<tr><td>${i+1}</td><td><b style="color:${['대구','경북'].includes(c.sido)?'var(--acc)':'inherit'}">${esc(c.name)}</b></td><td>${esc(c.sido)}</td><td class="n">${c.n}</td><td class="n">${eok(c.v)}</td>`+yrs.map(y=>`<td class="n">${c.by_year[y]||'·'}</td>`).join('')+'</tr>').join('');
+// insights
+const top=A.corps[0]||{}, sec=A.corps[1]||{};
+const outLead=[...A.corps].sort((a,b)=>b.out_v-a.out_v)[0]||{};
+const ins=[
+ `2026년 대구·경북 본사 기획사 <b>${A.corp_count}개사</b>가 <b>${A.count}건 · ${eok(A.total)}</b>을 수주했으며, 이 중 <b>${pct(zout.count,A.count)}(${zout.count}건 · ${eok(zout.total)})</b>은 타지역 발주를 따낸 외부 진출 실적입니다.`,
+ `지역 발주 방어율은 건수 <b>${pct(H.home_n,H.dg_orders)}</b>, 금액 <b>${pct(H.home_v,H.dg_orders_total)}</b> — 건수 대비 금액 방어율이 낮다면 대형 사업일수록 외지(주로 수도권) 업체에 넘어간다는 뜻입니다.`,
+ `1위 <b>${esc(top.name)}</b>(${top.n}건·${eok(top.v)})와 2위 <b>${esc(sec.name)}</b>(${sec.n}건·${eok(sec.v)})가 양강 구도이며, 상위 5개사가 수주액의 <b>${pct(A.corps.slice(0,5).reduce((s,c)=>s+c.v,0),A.total)}</b>를 차지합니다.`,
+ `타지역 진출 1위는 <b>${esc(outLead.name)}</b>(${outLead.out_n}건·${eok(outLead.out_v)}) — 협력·벤치마킹 대상으로 우선 검토할 만합니다.`,
+ `⑦ 매트릭스에서 같은 업체가 여러 해 연속 수주한 행사는 '인컴번트(기존 수행사)' 우위가 강한 사업이므로, 신규 진입 시 제안 차별화 또는 컨소시엄 전략이 필요합니다. 반대로 매년 수주사가 바뀌는 행사는 진입 기회가 열려 있는 사업입니다.`,
+ `사업자 미보유 상태에서는 ③ 순위 상위이면서 타지역 비중이 높은 업체, ⑦에서 대표행사 수행 이력이 있는 지역 업체가 프리랜서 연출·협력 파트너 제안 1순위 후보입니다.`,
+];
+$('ins').innerHTML=ins.map(t=>`<li>${t}</li>`).join('');
+if(typeof Chart==='undefined')return;
+Chart.defaults.color='#93a1b1';Chart.defaults.borderColor='#2b3846';
+new Chart($('cMon'),{data:{labels:A.monthly.map(m=>m.month),datasets:[
+ {type:'bar',label:'대구·경북 발주',data:A.monthly.map(m=>m.dg_n),backgroundColor:'rgba(54,201,165,.7)',stack:'s'},
+ {type:'bar',label:'타지역 발주',data:A.monthly.map(m=>m.out_n),backgroundColor:'rgba(90,169,255,.7)',stack:'s'},
+ {type:'line',label:'수주액(억)',data:A.monthly.map(m=>+(m.v/1e8).toFixed(1)),borderColor:'#f6c453',yAxisID:'y1',tension:.3}]},
+ options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'건'}},y1:{position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'억'}}}}});
+new Chart($('cHome'),{type:'doughnut',data:{labels:['지역업체 수주','외지업체 수주'],datasets:[{data:[+(H.home_v/1e8).toFixed(1),+(H.away_v/1e8).toFixed(1)],backgroundColor:['#36c9a5','#f97373']}]},options:{plugins:{tooltip:{callbacks:{label:c=>c.label+': '+c.raw+'억'}}}}});
+new Chart($('cYear'),{data:{labels:R.yearly.map(y=>y.year+(y.year===2025?'(부분)':'')),datasets:[
+ {type:'bar',label:'총액(억)',data:R.yearly.map(y=>+(y.total/1e8).toFixed(1)),backgroundColor:'rgba(54,201,165,.65)'},
+ {type:'line',label:'지역업체 금액비중(%)',data:R.yearly.map(y=>y.total?+(y.local_v/y.total*100).toFixed(1):0),borderColor:'#f92672',yAxisID:'y1'}]},
+ options:{scales:{y:{title:{display:true,text:'억'}},y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false}}}}});
+})();
+</script>
+</body>
+</html>

@@ -7,3 +7,4 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+g2b_history_2021_2025_cache.json

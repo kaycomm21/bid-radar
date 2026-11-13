@@ -7,6 +7,7 @@
 | 항목 | 내용 |
 |---|---|
 | **라이브 웹앱** | https://kaycomm21.github.io/bid-radar/ |
+| **대구·경북 5개년 심층 리포트** | https://kaycomm21.github.io/bid-radar/dg_report.html |
 | **호스팅 / 비용** | GitHub Pages 정적 웹앱 + PWA (`0원`, 브라우저만으로 PC·모바일 즉시 실행) |
 | **데이터 원천** | 노션 입찰 DB (Read-Only) + 나라장터 OpenAPI (`URL_BID` · `URL_OPENG` · `URL_SCSBID`) |
 | **테마 지원** | `🌙 다크 네이비` (기본) ↔ `🎨 CCS 모노카이` (우측 상단 버튼 전환) |

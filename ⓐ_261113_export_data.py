@@ -227,6 +227,9 @@ def _g2b_get_safe(url: str, params: dict, retries: int = 4) -> dict:
             if not txt:
                 raise ValueError('empty response body')
             js = r.json()
+            if 'OpenAPI_ServiceResponse' in js:
+                hdr0 = js['OpenAPI_ServiceResponse'].get('cmmMsgHeader', {})
+                raise RuntimeError(f"G2B 게이트웨이 오류 {hdr0.get('returnReasonCode')}: {hdr0.get('returnAuthMsg') or hdr0.get('errMsg')}")
             if 'nkoneps.com.response.ResponseError' in js:
                 err = js['nkoneps.com.response.ResponseError'].get('header', {})
                 raise RuntimeError(f"G2B error {err.get('resultCode')}: {err.get('resultMsg')}")
@@ -998,7 +1001,10 @@ def verify_no_secrets():
         r'NARA_JANGTER_API_KEY',
         r'DATA_GO_KR_API_KEY',
     ]
-    targets = ['index.html', 'data.json', 'data.js', 'README.md', 'manifest.webmanifest', 'icon.svg']
+    targets = [
+        'index.html', 'data.json', 'data.js', 'README.md', 'manifest.webmanifest', 'icon.svg',
+        'dg_report.html', 'dg_report.js', 'dg_report.json', 'ⓐ_261113_대구경북_기획사_수주분석리포트.md',
+    ]
     for fname in targets:
         fpath = os.path.join(OUT_DIR, fname)
         if not os.path.exists(fpath):
