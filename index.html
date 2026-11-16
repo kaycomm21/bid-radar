@@ -666,7 +666,7 @@
       z-index: 45;
       background: var(--card);
       border-top: 1px solid var(--line);
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       padding-bottom: env(safe-area-inset-bottom);
     }
     .mb-nav-btn {
@@ -718,6 +718,8 @@
       <button type="button" class="drawer-nav-btn" data-tab="runners">🥈 차점(2~3위) &amp; 협력사</button>
       <button type="button" class="drawer-nav-btn" data-tab="pipeline">🚀 파이프라인 &amp; 시뮬레이터</button>
       <button type="button" class="drawer-nav-btn" data-tab="ledger">📋 개찰 공고 원장</button>
+      <button type="button" class="drawer-nav-btn" data-tab="history">🗂️ 행사 이력 (역대 수주·순위·점수)</button>
+      <button type="button" class="drawer-nav-btn" data-tab="ai">🧠 심층분석 (AI)</button>
       <hr style="width:100%;border:none;border-top:1px solid var(--line);margin:6px 0;" />
       <a href="./dg_report.html" class="drawer-nav-btn" style="text-decoration:none;color:var(--yellow);">📑 대구·경북 5개년 심층리포트 ↗</a>
     </nav>
@@ -818,6 +820,7 @@
           <span id="halfChipSlot" style="display:inline-flex;gap:4px;flex-wrap:wrap;"></span>
           <span class="filter-label" style="margin-left:6px;">분기:</span>
           <span id="quarterChipSlot" style="display:inline-flex;gap:4px;flex-wrap:wrap;"></span>
+          <button type="button" class="chip" id="btnLoadHistory" style="margin-left:8px;border-style:dashed;" title="2020~2025년 이벤트성 낙찰 약 1.5만 건(약 6MB)을 내려받아 모든 표·차트·검색에 합칩니다">📚 과거 연도(2020~2025) 불러오기</button>
         </div>
         <div class="filter-group" style="width:100%;margin-top:4px;">
           <span class="filter-label">월별 선택:</span>
@@ -885,6 +888,8 @@
       <button type="button" class="tab-btn" data-tab="runners">🥈 차점(2~3위) &amp; 협력사 발굴</button>
       <button type="button" class="tab-btn" data-tab="pipeline">🚀 진행중 파이프라인 &amp; 투찰 시뮬레이터</button>
       <button type="button" class="tab-btn" data-tab="ledger">📋 개찰 공고 원장 (원클릭 이동)</button>
+      <button type="button" class="tab-btn" data-tab="history">🗂️ 행사 이력</button>
+      <button type="button" class="tab-btn" data-tab="ai">🧠 심층분석</button>
     </nav>
 
     <!-- TAB 1: Overview & Corp Rankings -->
@@ -1240,6 +1245,38 @@
         <div class="pager" id="ledgerPager"></div>
       </div>
     </section>
+
+    <!-- TAB 6: 행사 이력 (extras.js 가 그린다) -->
+    <section class="tab-panel" id="tab-history">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🗂️ 행사 이력 — 역대 수주사 · 참가 업체 · 순위 · 점수</h2>
+            <p class="panel-desc">행사명(또는 발주처)을 넣으면 2020년부터 지금까지 그 행사를 누가 땄는지, 해마다 몇 팀이 들어왔는지, 순위와 기술·가격·종합 점수를 보여 줍니다. 띄어쓰기로 여러 단어를 넣으면 모두 포함된 공고만 찾습니다.</p>
+          </div>
+          <span class="badge badge-muted" id="histStatus">데이터 준비 전</span>
+        </div>
+        <div class="filter-group" style="margin-bottom:10px;">
+          <input type="text" id="histQuery" class="search-input" style="flex:1;min-width:220px;" placeholder="예: 탈춤  /  100대 피아노  /  찻사발  /  수성못 페스티벌" />
+          <button type="button" class="btn btn-acc" id="btnHistSearch">찾기</button>
+        </div>
+        <div id="histChips" class="filter-group" style="margin-bottom:10px;"></div>
+        <div id="histResult"><div class="empty-msg">행사명을 넣고 「찾기」를 누르세요.</div></div>
+      </div>
+    </section>
+
+    <!-- TAB 7: 심층분석 (extras.js 가 그린다) -->
+    <section class="tab-panel" id="tab-ai">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🧠 심층분석 — AI에게 데이터째로 맡기기</h2>
+            <p class="panel-desc">분석 대상을 고르면 관련 낙찰 데이터와 질문을 한 덩어리로 묶습니다. ① 복사해서 구독 중인 Claude·Gemini 앱에 붙여넣거나(추가 비용 없음) ② API 키를 넣어 이 화면에서 바로 답을 받을 수 있습니다(쓴 만큼 과금).</p>
+          </div>
+        </div>
+        <div id="aiRoot"></div>
+      </div>
+    </section>
   </div>
 
   <!-- Mobile Fixed Bottom Navigation -->
@@ -1249,6 +1286,7 @@
     <button type="button" class="mb-nav-btn" data-tab="runners"><span>🥈</span><span>차점·협력</span></button>
     <button type="button" class="mb-nav-btn" data-tab="pipeline"><span>🚀</span><span>투찰시뮬</span></button>
     <button type="button" class="mb-nav-btn" data-tab="ledger"><span>📋</span><span>공고원장</span></button>
+    <button type="button" class="mb-nav-btn" data-tab="history"><span>🗂️</span><span>행사이력</span></button>
   </nav>
 
   <!-- Company Detail Modal -->
@@ -2202,7 +2240,7 @@
       function renderRunnersTab(rows) {
         const withRanks = rows.filter((r) => r.ranks && r.ranks.length > 0);
         document.getElementById('rankCallout').innerHTML =
-          `노션 <b>「순위상세」</b>가 수집된 공고 <b>${withRanks.length}건</b>(전체 데이터 중 ${DATA.meta.rank_detail_count}건)에서 ` +
+          `참가 업체 순위가 수집된 공고 <b>${withRanks.length}건</b>(전체 데이터 중 ${DATA.meta.rank_detail_count}건 · 나라장터 개찰 순위 기준, 매일 약 1,000건씩 추가 수집)에서 ` +
           `2~3위 석패 업체를 추적합니다. 기술력·투찰 역량이 검증된 실질 경쟁사 및 대구·경북 공동수급 협력사 후보로 활용할 수 있습니다.`;
 
         const winCounts = new Map();
@@ -2769,7 +2807,8 @@
           `(대구·경북 발주+본사 ${(m.won_dg_all_count || m.won_dg_count).toLocaleString('ko-KR')}건 / G2B 2026 보강 +${(m.g2b_added_count || 0).toLocaleString('ko-KR')}건) · 진행중 ${m.open_count}건 · ` +
           `노션 DB: ${m.db_unchanged ? '<span class="badge badge-green">Read-Only 무변경 확인</span>' : '<span class="badge badge-muted">Read-Only</span>'}`;
 
-        // 기간 칩 (연기 / 반기 / 분기) & 월 드롭다운 & 시·도 드롭다운 채우기
+        // 기간 칩 (연기 / 반기 / 분기) & 월 드롭다운 & 시·도 드롭다운 채우기 — 과거 연도를 불러오면 다시 그린다
+        function buildPeriodControls() {
         const years = m.all_years || [];
         const halves = m.all_halves || [];
         const quarters = m.all_quarters || [];
@@ -2798,6 +2837,14 @@
           sidoSel.innerHTML = '<option value="ALL">시·도 전체 (17개)</option>' +
             sidos.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
         }
+        }
+        buildPeriodControls();
+        // extras.js(행사 이력·심층분석·과거 연도·전체 순위)가 쓰는 연결 통로
+        window.BR = {
+          get DATA() { return DATA; }, state, esc, fmtWon, fmtExact, corpNameOf, valueOf, rateOf, mean, NOISE_RE,
+          getBaseWonRows, getFilteredWonRows, renderAll, openCorpModal, buildPeriodControls, syncFilterChips,
+          periodLabelText, zoneLabelText,
+        };
 
         // 행사유형 옵션 채우기
         const cats = m.categories || [];
@@ -2983,7 +3030,7 @@
           });
         });
 
-        const VALID_TABS = new Set(['overview', 'incumbent', 'runners', 'pipeline', 'ledger']);
+        const VALID_TABS = new Set(['overview', 'incumbent', 'runners', 'pipeline', 'ledger', 'history', 'ai']);
         function switchTab(t, updateHash = true) {
           const target = VALID_TABS.has(t) ? t : 'overview';
           state.activeTab = target;
@@ -3116,5 +3163,6 @@
       bootstrap();
     })();
   </script>
+  <script src="./extras.js"></script>
 </body>
 </html>

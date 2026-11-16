@@ -13,6 +13,8 @@ g2b_history_2021_2025_cache.json
 # 로컬 분석용 전체본 — 공개본은 data.js / dg_report.js 만 올린다 (2026-11-16 ⓒ: 이중 커밋 16.6MB → 8MB)
 data.json
 dg_report.json
+history_rows.json
+g2b_ranks_cache.json
 
 # 내부 운영 문서 (노션 DB ID·세션 ID·작업 경위 포함) — 공개 저장소에 올리지 않는다
 ⓐ_261113_웹앱_작업보고_v1.0.md
