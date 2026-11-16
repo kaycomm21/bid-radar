@@ -758,7 +758,17 @@
     </header>
 
     <!-- Global Filter Panel -->
-    <section class="filter-panel" aria-label="전역 필터">
+    <style>
+      /* 모바일: 필터가 첫 화면을 다 차지해 결과가 안 보이던 문제 → 기본 접힘 + 열기 버튼 (2026-11-16 ⓒ) */
+      .filter-toggle { display: none; }
+      @media (max-width: 768px) {
+        .filter-toggle { display: block; width: 100%; margin-bottom: 8px; text-align: left; }
+        .filter-panel.collapsed { display: none; }
+      }
+      th[data-lsort]:hover { color: var(--ink); }
+    </style>
+    <button type="button" class="btn filter-toggle" id="btnToggleFilters" aria-expanded="false">🔎 필터 열기 (지역·금액·기간·검색)</button>
+    <section class="filter-panel" id="filterPanel" aria-label="전역 필터">
       <div class="filter-row">
         <div class="filter-group" id="regionChips">
           <span class="filter-label">📍 입찰 범위</span>
@@ -835,6 +845,9 @@
           </select>
           <input type="text" id="searchInput" class="search-input" placeholder="업체명(예: 주식회사 렛츠) · 공고명 · 발주처 · 공고번호 검색..." />
           <button type="button" class="btn" id="btnResetFilters">↺ 초기화</button>
+          <label class="filter-label" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="제목에 시설관리·조경·유지보수·실시설계·보험가입·채용대행 등이 들어간 비기획 용역을 집계에서 뺍니다. '원본 표기 (v2 호환)' 모드에서는 적용되지 않습니다.">
+            <input type="checkbox" id="chkExcludeNoise" checked /> 비기획 용역 제외 (<span id="noiseCountLabel">0</span>건)
+          </label>
         </div>
       </div>
       <div id="searchScopeHint" class="callout" style="display:none;margin:0;padding:8px 12px;font-size:12px;"></div>
@@ -1207,14 +1220,14 @@
           <table>
             <thead>
               <tr>
-                <th>게시일</th>
+                <th data-lsort="posted" style="cursor:pointer;" title="누르면 정렬">게시일 ↕</th>
                 <th>지역</th>
                 <th>공고명 (클릭 시 나라장터 새 탭)</th>
                 <th>발주처</th>
-                <th class="num">사업금액</th>
-                <th class="num">낙찰금액</th>
-                <th class="num">낙찰률(1순위)</th>
-                <th class="num">참가</th>
+                <th class="num" data-lsort="budget" style="cursor:pointer;" title="누르면 정렬">사업금액 ↕</th>
+                <th class="num" data-lsort="value" style="cursor:pointer;" title="누르면 정렬">낙찰금액 ↕</th>
+                <th class="num" data-lsort="rate" style="cursor:pointer;" title="누르면 정렬">낙찰률(1순위) ↕</th>
+                <th class="num" data-lsort="n" style="cursor:pointer;" title="누르면 정렬">참가 ↕</th>
                 <th>1순위 낙찰업체</th>
                 <th>유형</th>
               </tr>
@@ -1290,6 +1303,9 @@
         hlEnabled: true,         // 행 하이라이트 색상 ON/OFF
         pinnedCorps: loadPinnedSet(),
         excludeJodal: false,
+        excludeNoise: true,      // 시설관리·조경·설계 등 비기획 용역 제외 (정규화 모드에서만 적용, v2 호환 모드는 원본 유지)
+        ledgerSort: 'posted',    // posted | budget | value | rate | n
+        ledgerDir: -1,
         sortKey: 'n',
         sortDir: -1,
         corpPage: 1,
@@ -1419,8 +1435,12 @@
         return state.corpSido !== 'ALL' ? `${base} (${state.corpSido})` : base;
       }
 
+      // 기획·연출이 아닌 시설·유지보수·보험·행정 용역 (ⓐ_261113_dg_analysis.py 의 NOISE_RE 와 같은 규칙으로 유지)
+      const NOISE_RE = /(?:^|[^가-힣])조경(?![제상])|시설\s?관리(?!공단)|시설물\s?(?:유지|관리)|유지\s?보수|유지\s?관리|(?:^|[^가-힣])청소(?!년)|미화\s?관리|폐기물|급식\s?(?:일부\s?)?위탁|보험\s?가입|종합보험|자동차보험|건설사업관리|전기공사|세부설계|실시설계|기본설계|정비사업|태양광|승강기|통근버스|소모성물품|환경영향평가|군관리계획|채용\s?(?:업무\s?)?대행|직원\s?채용|공용차량|주거래여행사|수목\s?납품|항공권\s?구매/;
+
       function getBaseWonRows() {
-        return state.normMode ? DATA.won_rows : DATA.won_rows.filter((r) => r.is_notion_v2);
+        if (!state.normMode) return DATA.won_rows.filter((r) => r.is_notion_v2);
+        return state.excludeNoise ? DATA.won_rows.filter((r) => !r._noise) : DATA.won_rows;
       }
 
       function getFilteredWonRows(ignorePeriod = false) {
@@ -1732,9 +1752,14 @@
 
         return {
           count: rows.length,
-          dgCount: rows.filter((r) => r.region === '대구' || (state.normMode && r.corp_sido === '대구')).length,
-          gbCount: rows.filter((r) => r.region === '경북' || (state.normMode && r.corp_sido === '경북')).length,
-          otherCount: rows.filter((r) => r.region !== '대구' && r.region !== '경북' && !(state.normMode && (r.corp_sido === '대구' || r.corp_sido === '경북'))).length,
+          // 세 값의 합이 전체 건수와 같도록 한 행은 한 곳에만 센다 (발주지역 우선, 없으면 본사 소재지)
+          ...(() => {
+            const zoneOf = (r) => (r.region === '대구' || r.region === '경북') ? r.region
+              : (state.normMode && (r.corp_sido === '대구' || r.corp_sido === '경북')) ? r.corp_sido : '타지';
+            const cnt = { 대구: 0, 경북: 0, 타지: 0 };
+            rows.forEach((r) => { cnt[zoneOf(r)] += 1; });
+            return { dgCount: cnt['대구'], gbCount: cnt['경북'], otherCount: cnt['타지'] };
+          })(),
           soloCount: rows.filter((r) => r.n === 1).length,
           total,
           avgRate,
@@ -1918,7 +1943,10 @@
         const labels = summary.map((m) => m.key);
         const counts = summary.map((m) => m.count);
         const amountsEok = summary.map((m) => Number((m.total / 1e8).toFixed(2)));
-        const bgColors = labels.map((l) => (state.periodType !== gran || state.periodVal === 'ALL' || state.periodVal === l) ? 'rgba(54, 201, 165, 0.65)' : 'rgba(54, 201, 165, 0.2)');
+        // 차트 색을 현재 테마(CSS 변수)에서 읽는다 — 모노카이에서도 네이비 색으로 남던 문제 수정
+        const cssVar = (n) => getComputedStyle(document.body).getPropertyValue(n).trim();
+        const cAcc = cssVar('--acc'), cBlue = cssVar('--blue'), cMuted = cssVar('--muted'), cInk = cssVar('--ink'), cLine = cssVar('--line');
+        const bgColors = labels.map((l) => (state.periodType !== gran || state.periodVal === 'ALL' || state.periodVal === l) ? cAcc + 'a6' : cAcc + '33');
 
         monthlyChartInstance = new Chart(ctx, {
           data: {
@@ -1929,7 +1957,7 @@
                 label: '개찰 건수 (건)',
                 data: counts,
                 backgroundColor: bgColors,
-                borderColor: '#36c9a5',
+                borderColor: cAcc,
                 borderWidth: 1,
                 borderRadius: 6,
                 yAxisID: 'y',
@@ -1938,8 +1966,8 @@
                 type: 'line',
                 label: '낙찰 총액 (억원)',
                 data: amountsEok,
-                borderColor: '#5aa9ff',
-                backgroundColor: 'rgba(90, 169, 255, 0.15)',
+                borderColor: cBlue,
+                backgroundColor: cBlue + '26',
                 tension: 0.28,
                 pointRadius: 4,
                 yAxisID: 'y1',
@@ -1966,21 +1994,21 @@
               renderAll();
             },
             plugins: {
-              legend: { labels: { color: '#cbd5e1', font: { size: 12 } } },
+              legend: { labels: { color: cInk, font: { size: 12 } } },
             },
             scales: {
-              x: { ticks: { color: '#93a1b1' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              x: { ticks: { color: cMuted }, grid: { color: cLine + '66' } },
               y: {
                 position: 'left',
-                ticks: { color: '#36c9a5' },
-                grid: { color: 'rgba(255,255,255,0.06)' },
-                title: { display: true, text: '건수', color: '#36c9a5' },
+                ticks: { color: cAcc },
+                grid: { color: cLine + '80' },
+                title: { display: true, text: '건수', color: cAcc },
               },
               y1: {
                 position: 'right',
-                ticks: { color: '#5aa9ff' },
+                ticks: { color: cBlue },
                 grid: { drawOnChartArea: false },
-                title: { display: true, text: '억원', color: '#5aa9ff' },
+                title: { display: true, text: '억원', color: cBlue },
               },
             },
           },
@@ -2289,9 +2317,16 @@
         });
 
         const q = quartiles(sample.map((r) => rateOf(r)));
-        const p25 = q ? q[0] : 88.0;
-        const med = q ? q[1] : 90.5;
-        const p75 = q ? q[2] : 95.0;
+        if (!q) {
+          // 표본 3건 미만이면 근거 없는 기본값(88/90.5/95%)을 보여 주지 않는다
+          document.getElementById('simResults').innerHTML =
+            `<div class="sim-box" style="grid-column:1/-1;"><span class="badge badge-warn">표본 부족</span>` +
+            `<div style="margin-top:8px;font-size:13px;">이 조건의 공식 낙찰률 표본이 <b>${sample.length}건</b>뿐이라 투찰가를 계산하지 않습니다. 지역을 "전국"으로, 유형을 "전체"로 넓혀 보세요.</div></div>`;
+          return;
+        }
+        const p25 = q[0];
+        const med = q[1];
+        const p75 = q[2];
 
         document.getElementById('simResults').innerHTML = [
           {
@@ -2331,6 +2366,17 @@
           if (state.hlFilter === 'PARTNER') return cs?.isPartner;
           if (state.hlFilter === 'RISING') return cs?.isRising;
           return true;
+        });
+        const lKey = state.ledgerSort;
+        const lVal = (r) => lKey === 'posted' ? (r.posted || '')   // 날짜 미상은 내림차순에서 맨 아래
+          : lKey === 'budget' ? (r.budget || 0)
+          : lKey === 'value' ? valueOf(r)
+          : lKey === 'rate' ? (rateOf(r) || 0)
+          : (r.n || 0);
+        hlFilteredRows.sort((x, y) => {
+          const a = lVal(x), b = lVal(y);
+          const d = typeof a === 'string' ? a.localeCompare(b) : a - b;
+          return state.ledgerDir * d || (y.posted || '').localeCompare(x.posted || '');
         });
 
         document.getElementById('ledgerCountBadge').textContent = `${hlFilteredRows.length.toLocaleString('ko-KR')}건`;
@@ -2637,6 +2683,43 @@
 
       function initUI() {
         const m = DATA.meta;
+        let noiseCount = 0;
+        DATA.won_rows.forEach((r) => { r._noise = NOISE_RE.test(r.title || ''); if (r._noise) noiseCount += 1; });
+        const noiseLabel = document.getElementById('noiseCountLabel');
+        if (noiseLabel) noiseLabel.textContent = noiseCount.toLocaleString('ko-KR');
+        document.getElementById('chkExcludeNoise')?.addEventListener('change', (e) => {
+          state.excludeNoise = e.target.checked;
+          state.corpPage = 1; state.ledgerPage = 1;
+          renderAll();
+        });
+        // 원장 정렬 (게시일·금액·낙찰률·참가)
+        document.querySelectorAll('th[data-lsort]').forEach((th) => {
+          th.addEventListener('click', () => {
+            const k = th.dataset.lsort;
+            if (state.ledgerSort === k) state.ledgerDir *= -1;
+            else { state.ledgerSort = k; state.ledgerDir = -1; }
+            state.ledgerPage = 1;
+            renderAll();
+          });
+        });
+        // 모바일 필터 접기/펼치기 (768px 이하에서만 버튼이 보인다)
+        const fPanel = document.getElementById('filterPanel');
+        const fBtn = document.getElementById('btnToggleFilters');
+        if (fPanel && fBtn) {
+          if (window.innerWidth <= 768) fPanel.classList.add('collapsed');
+          fBtn.addEventListener('click', () => {
+            const collapsed = fPanel.classList.toggle('collapsed');
+            fBtn.textContent = collapsed ? '🔎 필터 열기 (지역·금액·기간·검색)' : '▲ 필터 접기';
+            fBtn.setAttribute('aria-expanded', String(!collapsed));
+          });
+        }
+        // Esc 로 업체 모달·사이드 메뉴 닫기
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return;
+          document.getElementById('corpModal')?.classList.remove('open');
+          document.getElementById('appDrawer')?.classList.remove('open');
+          document.getElementById('drawerScrim')?.classList.remove('open');
+        });
         document.getElementById('metaSubtitle').innerHTML =
           `생성: <b>${esc(m.generated_at)}</b> · 전국 개찰 <b>${m.won_count.toLocaleString('ko-KR')}건</b> ` +
           `(대구·경북 발주+본사 ${(m.won_dg_all_count || m.won_dg_count).toLocaleString('ko-KR')}건 / G2B 2026 보강 +${(m.g2b_added_count || 0).toLocaleString('ko-KR')}건) · 진행중 ${m.open_count}건 · ` +
@@ -2794,10 +2877,13 @@
           renderAll();
         });
 
+        // 글자마다 6천여 행 재집계 + 차트 재생성이 일어나지 않도록 입력이 멈춘 뒤 0.2초에 한 번만 그린다
+        let searchTimer = null;
         document.getElementById('searchInput').addEventListener('input', (e) => {
           state.search = e.target.value;
           state.corpPage = 1; state.ledgerPage = 1;
-          renderAll();
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(renderAll, 200);
         });
 
         document.getElementById('btnResetFilters').addEventListener('click', () => {
@@ -2916,6 +3002,7 @@
           const btn = document.getElementById('btnThemeToggle');
           if (btn) btn.textContent = isMono ? '🌙 다크 네이비 테마' : '🎨 모노카이 테마';
           try { localStorage.setItem(THEME_KEY, isMono ? 'monokai' : 'navy'); } catch (_) {}
+          if (monthlyChartInstance) renderAll();   // 차트 색을 새 테마로 다시 그린다
         }
         try {
           applyTheme(localStorage.getItem(THEME_KEY) || 'navy');

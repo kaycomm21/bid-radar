@@ -8,3 +8,14 @@ __pycache__/
 .DS_Store
 Thumbs.db
 g2b_history_2021_2025_cache.json
+ⓐ_261116_BID_RADAR_Fable52_검수요청서.md
+
+# 로컬 분석용 전체본 — 공개본은 data.js / dg_report.js 만 올린다 (2026-11-16 ⓒ: 이중 커밋 16.6MB → 8MB)
+data.json
+dg_report.json
+
+# 내부 운영 문서 (노션 DB ID·세션 ID·작업 경위 포함) — 공개 저장소에 올리지 않는다
+ⓐ_261113_웹앱_작업보고_v1.0.md
+ⓐ_261113_장기기억_백업_마스터노트.md
+ⓒ_*.md
+.claude/

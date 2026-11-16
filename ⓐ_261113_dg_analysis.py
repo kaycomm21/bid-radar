@@ -21,20 +21,61 @@ D = json.load(open(os.path.join(APP, 'data.json'), encoding='utf-8'))
 WON = D['won_rows']
 PROF = D.get('corp_profiles', {})
 
-DG_PLACES = [
-    '대구', '경상북도', '경북', '포항', '경주', '김천', '안동', '구미', '영주', '영천', '상주', '문경', '경산',
-    '의성', '청송', '영양', '영덕', '청도', '고령', '성주', '칠곡', '예천', '봉화', '울진', '울릉', '군위',
-    '달성', '수성', '달서', '신라문화', '도청', '한국정신문화재단', '세계유교문화재단', '치맥산업협회', '엑스코',
-    '팔공산', '보문', '비슬산', '낙동강세계평화',
-]
+# ── 대구·경북 판정 (2026-11-16 ⓒ 수정) ──────────────────────────────────────
+# 구버전은 `'경산' in org` 식 단순 포함 검사라 '한국환[경산]업기술원'(서울) 같은 오탐이 났다.
+# → ① 지명 앞 글자가 한글이면 불일치(단어 경계) ② 동음이의가 흔한 2글자 지명은 행정 접미사·축제명이 붙을 때만 인정.
+_HB = r'(?<![가-힣])'   # 한글 단어 경계(앞)
+_DG_SURE = re.compile(
+    r'(?<!해운)대구|경상북도|경북|신라문화|한국정신문화재단|세계유교문화재단|치맥산업협회|팔공산|비슬산|낙동강세계평화'
+    r'|보문관광단지|보문단지|경주엑스포|대가야|수성못|동성로|달구벌|' + _HB + r'엑스코'
+)
+_DG_CORE = re.compile(r'(?<!해운)대구|경북|경상북도')   # '부산광역시 해운[대구]' 오탐 방지
+_DG_SAFE = re.compile(
+    _HB + r'(?:포항|김천|안동|영천|문경|경산|의성(?!어)|청송|영덕|칠곡|봉화|울진|울릉|군위'
+    r'|경주(?!마|용|대회|차|로봇|트랙)|구미(?!권|주|\s?각국|\s?선진))'
+)
+_AMBIG = r'(?:영주(?!권)|상주(?!인력|직원|근무|단체)|영양(?!사|교육|관리|플러스|성분|제|식)|청도|고령(?!자|화|사회|층|친화|인구)|성주|예천|달성|수성|달서)'
+_DG_AMBIG_ORG = re.compile(_HB + _AMBIG + r'(?:시|군|구|문화|축제|관광|체육|교육|농업|도시|청년|소방|세무|상공|\s)')
+# '재단법인수성문화재단'·'국립경주문화유산연구소'·'세계경주포럼'처럼 앞말이 붙어 단어 경계가 안 잡히는 표기를 띄워 준다.
+_GLUE_LEGAL = re.compile(r'재단법인|사단법인|\(재\)|\(사\)|주식회사|\(주\)|㈜')
+_GLUE_PREFIX = re.compile(r'(국립|도립|시립|군립|세계|국제|전국)(?=[가-힣])')
+
+
+def _prep(s):
+    return _GLUE_PREFIX.sub(r'\1 ', _GLUE_LEGAL.sub(' ', s))
+_DG_AMBIG_TITLE = re.compile(
+    _HB + _AMBIG + r'(?:시|군|구|[가-힣A-Za-z0-9·\s]{0,12}(?:축제|문화제|페스티벌|체전|체육대회|박람회|엑스포|축전))'
+)
 OTHER_SIDOS = (
     '서울', '부산', '광주', '인천', '대전', '울산', '세종', '제주', '강원',
     '전라', '전북', '전남', '충청', '충북', '충남', '경기', '경남', '경상남도',
 )
-NOISE = (
-    '조경', '시설관리', '청소', '경비', '보안', '유지보수', '공사', '설계', '감리',
-    '급식', '폐기물', '보험', '차량', '임차', '인쇄', '물품', '구매',
+# 제목용: '육상경기대회'의 '경기'를 경기도로 오인하지 않도록 한다.
+_OTHER_SIDO_TITLE = re.compile(
+    _HB + r'(?:서울|부산|광주|인천|대전|울산|세종|제주|강원|전라|전북|전남|충청|충북|충남|경남|경상남도'
+    r'|경기(?!대회|장|력|종목|운영|진행))'
 )
+# 기획·연출이 아닌 시설·유지보수·보험·행정 용역 (실데이터 6,149건 제목을 보고 정한 규칙. index.html 의 NOISE_RE 와 같게 유지)
+NOISE_RE = re.compile(
+    r'(?:^|[^가-힣])조경(?![제상])|시설\s?관리(?!공단)|시설물\s?(?:유지|관리)|유지\s?보수|유지\s?관리'
+    r'|(?:^|[^가-힣])청소(?!년)|미화\s?관리|폐기물|급식\s?(?:일부\s?)?위탁|보험\s?가입|종합보험|자동차보험|건설사업관리'
+    r'|전기공사|세부설계|실시설계|기본설계|정비사업|태양광|승강기|통근버스|소모성물품|환경영향평가|군관리계획'
+    r'|채용\s?(?:업무\s?)?대행|직원\s?채용|공용차량|주거래여행사|수목\s?납품|항공권\s?구매'
+)
+
+
+def is_noise(title):
+    return bool(NOISE_RE.search(title or ''))
+
+
+def _dg_in_org(org):
+    p = _prep(org)
+    return bool(_DG_SURE.search(org) or _DG_SAFE.search(p) or _DG_AMBIG_ORG.search(p + ' '))
+
+
+def _dg_in_title(title):
+    p = _prep(title)
+    return bool(_DG_SURE.search(title) or _DG_SAFE.search(p) or _DG_AMBIG_TITLE.search(p))
 
 
 def eok(v):
@@ -56,21 +97,21 @@ def val(r):
 
 def is_dg_org(org):
     org = org or ''
-    if any(s in org for s in OTHER_SIDOS) and not any(p in org for p in ('대구', '경북', '경상북도')):
+    if any(s in org for s in OTHER_SIDOS) and not _DG_CORE.search(org):
         return False
-    return any(p in org for p in DG_PLACES)
+    return _dg_in_org(org)
 
 
 def is_dg_event(org, title):
     org = org or ''
     title = title or ''
-    if any(s in org for s in OTHER_SIDOS) and not any(p in org for p in ('대구', '경북', '경상북도')):
+    if any(s in org for s in OTHER_SIDOS) and not _DG_CORE.search(org):
         return False
     if org.startswith('한국마사회') and '대구' not in title and '경북' not in title:
         return False
-    if any(p in org for p in DG_PLACES):
+    if _dg_in_org(org):
         return True
-    return any(p in title for p in DG_PLACES) and not any(s in title for s in OTHER_SIDOS)
+    return _dg_in_title(title) and not _OTHER_SIDO_TITLE.search(title)
 
 
 # ───────────────────────── 업체명 정규화/소재지 마스터 구축 ─────────────────────────
@@ -107,6 +148,9 @@ def sido_of_corp(name: str, adrs: str = '') -> str:
 
 
 # ───────────────────────── PART A. 2026 대구·경북 기획사 수주 결과 ─────────────────────────
+WON_ALL = WON
+WON = [r for r in WON_ALL if not is_noise(r.get('title'))]   # 시설·유지보수 등 비기획 용역 제외
+NOISE_EXCLUDED = len(WON_ALL) - len(WON)
 rows26 = [r for r in WON if str(r.get('year')) == '2026' and r.get('corp_sido') in ('대구', '경북')]
 
 
@@ -236,7 +280,7 @@ for it in allbids.values():
     t = it.get('title') or ''
     if not t or any(ex in t for ex in R.EXCLUDE_KEYWORDS) or not R.is_event_bid(t):
         continue
-    if any(n in t for n in NOISE):
+    if is_noise(t):
         continue
     org = it.get('org') or ''
     if not is_dg_event(org, t):
@@ -324,10 +368,17 @@ for name, its in series.items():
         } for i in lst[:3]]
     max_amt = max((i.get('amt') or 0) for i in its)
     score = (len(yrs) * 2) + min(10, max_amt / 1e8) + (5 if not name.startswith('🔁') else 0)
+    # 최다 수주: 횟수 → 누적 수주액 순. 2회 이상일 때만 '기존 수행사(인컴번트)'로 본다.
+    # (구버전은 전원 1회일 때 먼저 나온 업체를 '최다 수주'로 표기했다)
+    win_amt = defaultdict(float)
+    for i in its:
+        win_amt[i['corp_norm']] += i.get('amt') or 0
+    tw_name, tw_cnt = sorted(winners.items(), key=lambda kv: (-kv[1], -win_amt[kv[0]]))[0]
     major.append({
         'name': name, 'years': yrs, 'bids': len(its), 'total': total, 'max_amt': max_amt,
         'org': Counter(i.get('org') for i in its).most_common(1)[0][0],
-        'top_winner': winners.most_common(1)[0], 'unique_winners': len(winners),
+        'top_winner': [tw_name, tw_cnt], 'top_winner_amt': win_amt[tw_name],
+        'incumbent': tw_cnt >= 2, 'unique_winners': len(winners),
         'cells': cells, 'score': round(score, 1), 'symbolic': not name.startswith('🔁'),
     })
 major.sort(key=lambda m: -m['score'])
@@ -360,11 +411,19 @@ cum_top = sorted(
 
 rgst_months = Counter(re.sub(r'\D', '', i.get('rgst_dt') or '')[:6] for i in hist)
 covered = sorted(m for m, n in rgst_months.items() if n >= 3000 and m >= '202111')
+# 2025년 12개월이 모두 수집됐는지 실제 캐시로 판정 (문구를 손으로 고치지 않는다)
+missing_2025 = [f'2025{m:02d}' for m in range(1, 13) if f'2025{m:02d}' not in covered]
+partial_2025 = bool(missing_2025)
 coverage = {
     'history_from': covered[0] if covered else None,
     'history_to': covered[-1] if covered else None,
-    'gap_note': '2025-04 중순 ~ 2025-12 나라장터 낙찰정보는 수집 당일(2026-11-13) 공공데이터포털 일일 호출한도 초과로 미수집 — 2025년 수치는 1~4월분만 반영된 부분값',
+    'partial_2025': partial_2025,
+    'missing_2025': missing_2025,
+    'gap_note': (f'2025년 {", ".join(m[4:] + "월" for m in missing_2025)} 나라장터 낙찰정보 미수집 — 2025년 수치는 부분값'
+                 if partial_2025 else '2021-11 ~ 2026년 현재까지 나라장터 낙찰정보 전 구간 수집 완료'),
+    'noise_excluded': NOISE_EXCLUDED,
 }
+P25 = '(부분)' if partial_2025 else ''
 report = {
     'generated_at': datetime.now().isoformat(timespec='seconds'),
     'A': A, 'major': major, 'yearly': yearly, 'cum_top': cum_top,
@@ -389,7 +448,7 @@ def write_markdown_report():
     md.append(f'- **생성일시**: {report["generated_at"].replace("T", " ")}  ')
     md.append('- **웹 리포트**: https://kaycomm21.github.io/bid-radar/dg_report.html  ')
     md.append('- **메인 웹앱**: https://kaycomm21.github.io/bid-radar/  ')
-    md.append(f'- **데이터 범위**: 2026년 정제 데이터 `6,149건` (노션 Read-Only + 나라장터 2026 전수), 5개년 이력 `{len(hist):,}건` ({coverage["history_from"]}~{coverage["history_to"]} + 2026년)')
+    md.append(f'- **데이터 범위**: 2026년 정제 데이터 `{len(WON_ALL):,}건` 중 시설·유지보수 등 비기획 용역 `{NOISE_EXCLUDED}건` 제외 (노션 Read-Only + 나라장터 2026 전수), 5개년 이력 `{len(hist):,}건` ({coverage["history_from"]}~{coverage["history_to"]} + 2026년)')
     md.append(f'- **주의사항**: {coverage["gap_note"]}\n')
     md.append('---\n')
 
@@ -447,15 +506,17 @@ def write_markdown_report():
     md.append('')
 
     md.append('## Ⅶ. 대구·경북 주요 입찰(상징성·고유성·사업비 규모) & 5개년(2022~2026) 수주사 매트릭스\n')
-    md.append('> 선정 점수 = `(참여 연도 수 × 2) + min(10, 최대 사업비/1억) + (대표행사 가산 +5)` · 칸 내 괄호는 낙찰금액, `2025`는 1~4월 부분 집계\n')
-    md.append('| # | 주요 입찰 | 주 발주처 | 최대규모 | 2022 | 2023 | 2024 | 2025(부분) | 2026 | 최다 수주 |')
+    md.append('> 선정 점수 = `(참여 연도 수 × 2) + min(10, 최대 사업비/1억) + (대표행사 가산 +5)` · 칸 내 괄호는 낙찰금액'
+              + (' · `2025`는 부분 집계' if partial_2025 else '') + ' · 최다 수주는 2회 이상일 때만 기존 수행사로 표기\n')
+    md.append(f'| # | 주요 입찰 | 주 발주처 | 최대규모 | 2022 | 2023 | 2024 | 2025{P25} | 2026 | 최다 수주 |')
     md.append('|---:|---|---|---:|---|---|---|---|---|---|')
     for idx, m in enumerate(major, 1):
         row = [str(idx), m['name'].replace('🔁 ', ''), m['org'], fmt_eok(m['max_amt'])]
         for y in ('2022', '2023', '2024', '2025', '2026'):
             cs = m['cells'].get(y) or []
             row.append('<br>'.join(f'{c["corp"]} ({fmt_eok(c["amt"])})' for c in cs) if cs else '–')
-        row.append(f'{m["top_winner"][0]} ({m["top_winner"][1]}회)')
+        row.append(f'{m["top_winner"][0]} ({m["top_winner"][1]}회)' if m['incumbent']
+                   else f'매년 교체 (수주사 {m["unique_winners"]}곳)')
         md.append('| ' + ' | '.join(row) + ' |')
     md.append('')
 
@@ -463,11 +524,11 @@ def write_markdown_report():
     md.append('| 연도 | 발주 건수 | 발주 총액 | 지역업체 건수 | 지역업체 금액(비중) |')
     md.append('|---:|---:|---:|---:|---:|')
     for y in yearly:
-        tag = f'{y["year"]} (부분)' if y['year'] == 2025 else str(y['year'])
+        tag = f'{y["year"]} (부분)' if (y['year'] == 2025 and partial_2025) else str(y['year'])
         pct_v = y['local_v'] / max(1, y['total']) * 100
         md.append(f'| {tag} | {y["count"]}건 | {fmt_eok(y["total"])} | {y["local_n"]}건 | {fmt_eok(y["local_v"])} ({pct_v:.1f}%) |')
     md.append('')
-    md.append('| 순위 | 업체명 | 본사 | 누적 건수 | 누적 수주액 | 22 | 23 | 24 | 25(부분) | 26 |')
+    md.append(f'| 순위 | 업체명 | 본사 | 누적 건수 | 누적 수주액 | 22 | 23 | 24 | 25{P25} | 26 |')
     md.append('|---:|---|---|---:|---:|---:|---:|---:|---:|---:|')
     for idx, c in enumerate(cum_top, 1):
         by = c['by_year']
@@ -481,7 +542,11 @@ def write_markdown_report():
     md.append(f'1. **타지역 원정 수주 비중 {zout["count"]/max(1,A["count"])*100:.1f}%**: 대구·경북 기획사 수주액 `{fmt_eok(A["total"])}` 중 `{fmt_eok(zout["total"])}`({zout["count"]}건)이 타지역·중앙부처 발주에서 나왔습니다. 지역 물량에만 묶이지 않고 타지역으로 나가는 기획사(**{out_lead["name"]}** `{out_lead["out_n"]}건·{fmt_eok(out_lead["out_v"])}` 등)가 외연 확장형 파트너 후보입니다.')
     md.append(f'2. **홈그라운드 대형 사업의 외지 유출**: 대구·경북 발주 건수 기준 지역 방어율은 `{H["home_n"]/max(1,H["dg_orders"])*100:.1f}%`이나 금액 기준 방어율은 `{H["home_v"]/max(1,H["dg_orders_total"])*100:.1f}%`로 낮습니다. 수억~수십억대 대형 국제행사·체전·대형축제는 서울/경기권 대형 대행사에 넘어가는 경향이 뚜렷합니다.')
     md.append(f'3. **양강 + 중견 허리층 구조**: **{top1["name"]}**(`{top1["n"]}건·{fmt_eok(top1["v"])}`)와 **{top2["name"]}**(`{top2["n"]}건·{fmt_eok(top2["v"])}`)가 1~2위를 형성하며 상위 5개사가 지역 수주액의 `{top5_share:.1f}%`를 차지합니다.')
-    md.append('4. **인컴번트 vs 오픈형 입찰 구분 공략**: Ⅶ 매트릭스에서 동일 업체가 반복 수주한 행사(예: `문경찻사발축제` `(주)예일커뮤니케이션즈`)는 기존 수행사 텃밭 성격이 강해 공동수급·연출 참여가 유리하며, 매년 수주사가 교체되는 행사(예: `안동국제탈춤페스티벌`, `청송사과축제`, `구미/경산/성주`권 축제)가 신규 진입·단독/컨소시엄 공략 대상입니다.\n')
+    inc = sorted((m for m in major if m['incumbent']), key=lambda m: -m['top_winner'][1])[:3]
+    opn = [m for m in major if not m['incumbent'] and len(m['years']) >= 3][:4]
+    inc_txt = ', '.join(f'`{m["name"].replace("🔁 ", "")}` {m["top_winner"][0]}({m["top_winner"][1]}회)' for m in inc) or '해당 없음'
+    opn_txt = ', '.join(f'`{m["name"].replace("🔁 ", "")}`' for m in opn) or '해당 없음'
+    md.append(f'4. **인컴번트 vs 오픈형 입찰 구분 공략**: Ⅶ 매트릭스에서 동일 업체가 반복 수주한 행사({inc_txt})는 기존 수행사 텃밭 성격이 강해 공동수급·연출 참여가 유리하며, 3개 연도 이상 발주됐는데 매년 수주사가 바뀐 행사({opn_txt})가 신규 진입·컨소시엄 공략 대상입니다.\n')
 
     md_path = os.path.join(APP, 'ⓐ_261113_대구경북_기획사_수주분석리포트.md')
     with open(md_path, 'w', encoding='utf-8') as f:

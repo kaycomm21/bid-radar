@@ -972,13 +972,11 @@ def main():
     json_path = os.path.join(OUT_DIR, 'data.json')
     js_path = os.path.join(OUT_DIR, 'data.js')
 
+    # data.json = 로컬 분석용 전체본(.gitignore, dg_analysis 입력) / data.js = 공개 배포본(내부 식별자 제거)
     json_text = json.dumps(payload, ensure_ascii=False, separators=(',', ':'))
     with open(json_path, 'w', encoding='utf-8') as f:
         f.write(json_text)
-    with open(js_path, 'w', encoding='utf-8') as f:
-        f.write('window.__BID_DATA__ = ')
-        f.write(json_text)
-        f.write(';\n')
+    write_public_js(payload, js_path)
 
     elapsed = round(time.time() - t0, 2)
     print(f'\n✅ 내보내기 완료 ({elapsed}초)')
@@ -992,6 +990,26 @@ def main():
         print(f"     · {m['month']}: {m['count']}건 / {m['total']/1e8:.1f}억 / 최다 {m['top_corp']} ({m['top_count']})")
 
 
+# 공개 저장소(GitHub Pages)에 올리지 않는 필드 (2026-11-16 ⓒ 검수)
+#   id = 노션 페이지 ID, bid_submitted·rank_checked = 사용자의 투찰·개찰확인 활동, 나머지는 화면이 쓰지 않는 필드
+PUBLIC_DROP_ROW_KEYS = ('id', 'bid_submitted', 'rank_checked', 'corp_key', 'corp_raw_key', 'open_dt', 'proc_cat', 'region_inferred')
+PUBLIC_DROP_META_KEYS = ('db_meta_before', 'db_meta_after', 'max_page_edited')
+
+
+def write_public_js(payload: dict, js_path: str) -> None:
+    """data.js(공개 배포본) 저장 — 노션 DB·페이지 ID 등 내부 식별자와 화면 미사용 필드를 뺀다."""
+    pub = {
+        'meta': {k: v for k, v in payload['meta'].items() if k not in PUBLIC_DROP_META_KEYS},
+        'corp_profiles': payload.get('corp_profiles', {}),
+        'won_rows': [{k: v for k, v in r.items() if k not in PUBLIC_DROP_ROW_KEYS} for r in payload['won_rows']],
+        'open_rows': [{k: v for k, v in r.items() if k not in PUBLIC_DROP_ROW_KEYS} for r in payload['open_rows']],
+    }
+    with open(js_path, 'w', encoding='utf-8') as f:
+        f.write('window.__BID_DATA__ = ')
+        f.write(json.dumps(pub, ensure_ascii=False, separators=(',', ':')))
+        f.write(';\n')
+
+
 def verify_no_secrets():
     """배포 파일에 API 키/비밀 토큰이 포함되지 않았는지 검증한다."""
     patterns = [
@@ -1000,11 +1018,13 @@ def verify_no_secrets():
         r'NOTION_API_KEY',
         r'NARA_JANGTER_API_KEY',
         r'DATA_GO_KR_API_KEY',
+        r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',   # 노션 DB·페이지 ID
+        r'serviceKey=[A-Za-z0-9%+/=]{20,}',
     ]
-    targets = [
-        'index.html', 'data.json', 'data.js', 'README.md', 'manifest.webmanifest', 'icon.svg',
-        'dg_report.html', 'dg_report.js', 'dg_report.json', 'ⓐ_261113_대구경북_기획사_수주분석리포트.md',
-    ]
+    # 손으로 적은 목록 대신 git 이 실제로 올릴 파일 전부를 검사한다 (스크립트 자신은 패턴 문자열을 담고 있어 제외)
+    ls = subprocess.run(['git', '-C', OUT_DIR, '-c', 'core.quotepath=false', 'ls-files', '--cached', '--others', '--exclude-standard'],
+                        capture_output=True, text=True, encoding='utf-8')
+    targets = [t for t in ls.stdout.splitlines() if t and not t.endswith('.py')]
     for fname in targets:
         fpath = os.path.join(OUT_DIR, fname)
         if not os.path.exists(fpath):
