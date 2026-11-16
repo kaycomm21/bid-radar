@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#0f1419" />
 <title>🎯 BID RADAR · 대구·경북 기획사 수주 심층 리포트 ⓐ</title>
 <link rel="icon" type="image/svg+xml" href="./icon.svg" />
@@ -210,7 +211,7 @@ $('ins').innerHTML=[
  `1위 <b>${esc(top.name)}</b>(${top.n}건·${eok(top.v)}), 2위 <b>${esc(sec.name)}</b>(${sec.n}건·${eok(sec.v)}). 상위 5개사가 수주액의 <b>${pct(top5,A.total)}</b>를 차지합니다.`,
  `타지역 진출 1위는 <b>${esc(outLead.name)}</b>(${outLead.out_n}건·${eok(outLead.out_v)}) — 협력·벤치마킹 대상으로 우선 검토할 만합니다.`,
  `⑦에서 같은 업체가 반복 수주한 행사(${incs.map(m=>`<b>${esc(m.name.replace('🔁 ',''))}</b> ${esc(m.top_winner[0])} ${m.top_winner[1]}회`).join(', ')||'해당 없음'})는 기존 수행사 우위가 강합니다. 3개 연도 이상 발주됐는데 2회 이상 딴 업체가 없는 행사(${opens.map(m=>`<b>${esc(m.name.replace('🔁 ',''))}</b>`).join(', ')||'해당 없음'})는 진입 기회가 열려 있습니다.`,
- `사업자 미보유 상태에서는 ③ 순위 상위이면서 타지역 비중이 높은 업체, ⑦에서 대표행사 수행 이력이 있는 지역 업체가 프리랜서 연출·협력 파트너 제안 1순위 후보입니다.`,
+ `협력 파트너를 찾는다면 ③ 순위 상위이면서 타지역 비중이 높은 업체, ⑦에서 대표행사 수행 이력이 있는 지역 업체가 1순위 후보입니다.`,
 ].map(t=>`<li>${t}</li>`).join('');
 
 // 검색: 모든 정렬 표의 행을 글자로 걸러낸다

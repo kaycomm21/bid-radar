@@ -992,7 +992,8 @@ def main():
 
 # 공개 저장소(GitHub Pages)에 올리지 않는 필드 (2026-11-16 ⓒ 검수)
 #   id = 노션 페이지 ID, bid_submitted·rank_checked = 사용자의 투찰·개찰확인 활동, 나머지는 화면이 쓰지 않는 필드
-PUBLIC_DROP_ROW_KEYS = ('id', 'bid_submitted', 'rank_checked', 'corp_key', 'corp_raw_key', 'open_dt', 'proc_cat', 'region_inferred')
+PUBLIC_DROP_ROW_KEYS = ('id', 'interest', 'bid_submitted',   # interest: 노션 관심 체크 — 2026-11-16 영근님 지시로 비공개
+ 'rank_checked', 'corp_key', 'corp_raw_key', 'open_dt', 'proc_cat', 'region_inferred')
 PUBLIC_DROP_META_KEYS = ('db_meta_before', 'db_meta_after', 'max_page_edited')
 
 

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0f1419" />
   <meta name="description" content="🎯 BID RADAR · 비드레이더 (CON Bid Intelligence ⓐ) — 공고가 아니라 수주를 위한 레이더. 전국·대구경북 이벤트기획사 입찰·낙찰 360° 인텔리전스" />
@@ -123,7 +124,7 @@
     .badge-orange { background: rgba(251,146,60,0.16); color: #fb923c; border-color: rgba(251,146,60,0.38); }
     .badge-muted { background: rgba(147,161,177,0.12); color: var(--muted); border-color: var(--line); }
 
-    /* Smart Row Highlights (사업자 미보유·협력사/경쟁사/관심 핀 강조) */
+    /* Smart Row Highlights (협력사/경쟁사/관심 핀 강조) */
     tr.row-hl-star td { background: rgba(246, 196, 83, 0.13); }
     tr.row-hl-star td:first-child { box-shadow: inset 4px 0 0 #f6c453; }
     tr.row-hl-top3 td { background: rgba(90, 169, 255, 0.10); }
@@ -851,6 +852,7 @@
         </div>
       </div>
       <div id="searchScopeHint" class="callout" style="display:none;margin:0;padding:8px 12px;font-size:12px;"></div>
+      <div id="corpPickHint" class="callout" style="display:none;margin:0;padding:8px 12px;font-size:12px;"></div>
 
       <div class="filter-row" id="highlightFilterBar">
         <div class="filter-group">
@@ -859,7 +861,7 @@
           <button type="button" class="chip hl-partner" data-hl="PARTNER" title="수주 2~4건 또는 차점(2~3위) 기록 보유 — 공동수급·명의협력 유망">🤝 협력유망</button>
           <button type="button" class="chip hl-rising" data-hl="RISING" title="최근 60일 수주가 이전 60일보다 증가">🔥 급상승</button>
           <button type="button" class="chip hl-top3" data-hl="TOP3" title="필터 내 수주 상위 1~3위 강자">👑 시장 TOP 3</button>
-          <button type="button" class="chip hl-star" data-hl="STAR" title="내가 ☆ 핀 고정한 업체 및 노션 관심 공고">⭐ 내 관심 핀 (<span id="pinCountLabel">0</span>)</button>
+          <button type="button" class="chip hl-star" data-hl="STAR" title="내가 ☆ 핀 고정한 업체 (이 브라우저에만 저장)">⭐ 내 관심 핀 (<span id="pinCountLabel">0</span>)</button>
         </div>
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-left:auto;">
           <input type="checkbox" id="chkHighlightOn" checked /> 🎨 행 색상 강조 ON
@@ -1303,7 +1305,8 @@
         hlEnabled: true,         // 행 하이라이트 색상 ON/OFF
         pinnedCorps: loadPinnedSet(),
         excludeJodal: false,
-        excludeNoise: true,      // 시설관리·조경·설계 등 비기획 용역 제외 (정규화 모드에서만 적용, v2 호환 모드는 원본 유지)
+        corpOnly: '',            // 업체 한 곳만 분석 (검색어가 여러 업체에 걸릴 때 섞이지 않게 고정)
+        excludeNoise: true,    // 시설관리·조경·설계 등 비기획 용역 제외 (정규화 모드에서만 적용, v2 호환 모드는 원본 유지)
         ledgerSort: 'posted',    // posted | budget | value | rate | n
         ledgerDir: -1,
         sortKey: 'n',
@@ -1443,9 +1446,10 @@
         return state.excludeNoise ? DATA.won_rows.filter((r) => !r._noise) : DATA.won_rows;
       }
 
-      function getFilteredWonRows(ignorePeriod = false) {
+      function getFilteredWonRows(ignorePeriod = false, ignoreCorpOnly = false) {
         const q = state.search.trim().toLowerCase();
         return getBaseWonRows().filter((r) => {
+          if (!ignoreCorpOnly && state.corpOnly && corpNameOf(r) !== state.corpOnly) return false;
           if (!matchRegion(r, state.region)) return false;
           if (!matchCorpZoneAndSido(r)) return false;
           if (state.band !== 'ALL' && r.band_ui !== state.band) return false;
@@ -1601,7 +1605,7 @@
           const isPinned = state.pinnedCorps.has(c.name);
           const isTop3 = top3Names.has(c.name);
           const isRising = c.momentum > 0;
-          // 사업자 미보유자 관점: 실적이 2~4건이거나 차점(2~3위) 입상 이력이 있는 실속파 협력유망사
+          // 협력 후보 관점: 실적이 2~4건이거나 차점(2~3위) 입상 이력이 있는 실속파 협력유망사
           const isPartner = (!isTop3 && c.n >= 2 && c.n <= 4) || runnerCorpSet.has(c.name);
           let hlClass = '';
           if (state.hlEnabled) {
@@ -2478,7 +2482,14 @@
         document.getElementById('modalTitle').innerHTML =
           `🏢 ${esc(corpName)} ` +
           `<button type="button" class="btn ${isPinnedNow ? 'btn-acc' : ''}" id="modalPinBtn" data-pin="${esc(corpName)}" style="margin-left:8px;padding:4px 10px;font-size:12px;">` +
-          `${isPinnedNow ? '⭐ 관심 핀 해제' : '☆ 내 관심 핀 고정'}</button>`;
+          `${isPinnedNow ? '⭐ 관심 핀 해제' : '☆ 내 관심 핀 고정'}</button>` +
+          `<button type="button" class="btn" id="modalOnlyBtn" style="margin-left:6px;padding:4px 10px;font-size:12px;" title="대시보드의 모든 표·차트를 이 업체만으로 다시 계산합니다">🔒 이 업체만 분석</button>`;
+        document.getElementById('modalOnlyBtn')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.corpOnly = corpName; state.corpPage = 1; state.ledgerPage = 1;
+          document.getElementById('corpModal').classList.remove('open');
+          renderAll();
+        });
         document.getElementById('modalPinBtn')?.addEventListener('click', (e) => {
           e.stopPropagation();
           togglePinCorp(corpName);
@@ -2628,8 +2639,41 @@
         }
       }
 
+      // 검색어가 여러 업체에 걸리면(예: "렛츠" → 주식회사 렛츠 + 렛츠스카이커뮤니케이션즈) 통계가 섞인다.
+      // → 걸린 업체를 칩으로 보여 주고, 하나를 누르면 그 업체만으로 모든 표·차트를 다시 계산한다.
+      function renderCorpPick() {
+        const el = document.getElementById('corpPickHint');
+        if (!el) return;
+        if (state.corpOnly) {
+          el.style.display = 'block';
+          el.innerHTML = `🔒 <b>${esc(state.corpOnly)}</b> 한 곳만 분석 중입니다. 아래 모든 표·차트가 이 업체 기준입니다. ` +
+            `<button type="button" class="btn" id="btnCorpOnlyClear" style="padding:2px 8px;margin-left:6px;font-size:11.5px;">✕ 고정 해제</button>`;
+          document.getElementById('btnCorpOnlyClear').addEventListener('click', () => {
+            state.corpOnly = ''; state.corpPage = 1; state.ledgerPage = 1; renderAll();
+          });
+          return;
+        }
+        const q = state.search.trim().toLowerCase();
+        if (!q || state.searchScope === 'TITLE') { el.style.display = 'none'; return; }
+        const cnt = new Map();
+        getFilteredWonRows(false, true).forEach((r) => {
+          const cn = corpNameOf(r);
+          if (cn && cn.toLowerCase().includes(q)) cnt.set(cn, (cnt.get(cn) || 0) + 1);
+        });
+        if (cnt.size < 2) { el.style.display = 'none'; return; }
+        const list = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
+        el.style.display = 'block';
+        el.innerHTML = `⚠️ <b>"${esc(state.search.trim())}"</b>가 업체 <b>${list.length}곳</b>에 걸려 아래 통계가 섞여 있습니다. 한 곳만 보려면 누르세요: ` +
+          list.slice(0, 12).map(([cn, n]) => `<button type="button" class="chip" data-corp-only="${esc(cn)}" style="margin:2px;">${esc(cn)} (${n}건)</button>`).join('') +
+          (list.length > 12 ? ` <span class="muted">외 ${list.length - 12}곳 — 검색어를 더 길게 입력하세요</span>` : '');
+        el.querySelectorAll('[data-corp-only]').forEach((b) => b.addEventListener('click', () => {
+          state.corpOnly = b.dataset.corpOnly; state.corpPage = 1; state.ledgerPage = 1; renderAll();
+        }));
+      }
+
       function renderAll() {
         updatePinCountLabel();
+        renderCorpPick();
         const filteredRows = getFilteredWonRows(false);
         const allRegionRows = getFilteredWonRows(true);
         const analysis = analyze(filteredRows, allRegionRows);
@@ -2881,6 +2925,7 @@
         let searchTimer = null;
         document.getElementById('searchInput').addEventListener('input', (e) => {
           state.search = e.target.value;
+          state.corpOnly = '';   // 검색어가 바뀌면 업체 고정을 푼다
           state.corpPage = 1; state.ledgerPage = 1;
           clearTimeout(searchTimer);
           searchTimer = setTimeout(renderAll, 200);
@@ -2890,7 +2935,7 @@
           state.region = 'ALL'; state.corpZone = 'ALL'; state.corpSido = 'ALL';
           state.band = 'ALL'; state.periodType = 'ALL'; state.periodVal = 'ALL';
           state.dateFrom = ''; state.dateTo = '';
-          state.cat = 'ALL'; state.search = ''; state.searchScope = 'ALL'; state.hlFilter = 'ALL';
+          state.cat = 'ALL'; state.search = ''; state.searchScope = 'ALL'; state.hlFilter = 'ALL'; state.corpOnly = '';
           document.getElementById('catSelect').value = 'ALL';
           document.getElementById('searchScope').value = 'ALL';
           document.getElementById('searchInput').value = '';
